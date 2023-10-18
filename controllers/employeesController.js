@@ -46,7 +46,7 @@ const deleteEmployee = async (req, res) => {
         return res.status(204).json({'message': `No employee matches ID ${req.body.id}`});
     }
     const result = await employee.deleteOne()
-    res.json()
+    res.json(result)
     
 }
 
