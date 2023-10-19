@@ -3,6 +3,8 @@ const bcrypt = require('bcrypt');
 const User = require('../model/User');
 
 const handleLogin = async (req, res) => {
+    const cookies = req.cookies
+    console.log(`cookie available at login: ${JSON.stringify(cookies)}`);
     const { user, pwd } = req.body;
     if (!user || !pwd) return res.status(400).json({ 'message': 'Username and password are required.' });
     const foundUser = await User.findOne({username: user}).exec();
@@ -25,18 +27,26 @@ const handleLogin = async (req, res) => {
             process.env.ACCESS_TOKEN_SECRET,
             { expiresIn: '60s' }
         );
-        const refreshToken = jwt.sign(
+        const newRefreshToken = jwt.sign(
             { "username": foundUser.username },
             process.env.REFRESH_TOKEN_SECRET,
-            { expiresIn: '1d' }
+            { expiresIn: '15s' }
         );
 
-        // Saving refreshToken with current user
-        foundUser.refreshToken = refreshToken;
-        const result = await foundUser.save()
+        const newRefreshTokenArray =
+            !cookies?.jwt
+                ? foundUser.refreshToken
+                : foundUser.refreshToken.filter(rt => rt !== cookies.jwt)
 
+            if(cookies) res.clearCookie('jwt', { httpOnly: true , sameSite: 'None' /*, secure: true */});
+
+        // Saving refreshToken with current user
+        foundUser.refreshToken = [...newRefreshTokenArray, newRefreshToken]
+        const result = await foundUser.save()
         console.log(result);
-        res.cookie('jwt', refreshToken, { httpOnly: true, sameSite: 'None', /*secure: true,*/ maxAge: 24 * 60 * 60 * 1000 });
+
+        
+        res.cookie('jwt', newRefreshToken, { httpOnly: true, sameSite: 'None', /*secure: true,*/ maxAge: 24 * 60 * 60 * 1000 });
         res.json({ accessToken });
     } else {
         res.sendStatus(401);

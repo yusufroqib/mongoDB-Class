@@ -23,7 +23,7 @@ const userSchema = new Schema({
         type: String,
         required: true
     },
-    refreshToken: String
+    refreshToken: [String]
 })
 
 const User = mongoose.model("User", userSchema)
