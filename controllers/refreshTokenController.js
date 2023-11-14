@@ -1,4 +1,3 @@
-
 const User = require("../model/User");
 const jwt = require('jsonwebtoken');
 
@@ -17,6 +16,8 @@ const handleRefreshToken = async(req, res) => {
             process.env.REFRESH_TOKEN_SECRET,
             async (err, decoded) => {
                 if (err) res.sendStatus(403);
+
+                console.log('Attempted refresh token reuse!');
                 const hackedUser = await User.findOne({username: decoded.username}).exec()
                 hackedUser.refreshToken = []
                 const result = await hackedUser.save()
@@ -34,9 +35,12 @@ const handleRefreshToken = async(req, res) => {
         refreshToken,
         process.env.REFRESH_TOKEN_SECRET,
         async (err, decoded) => {
+            
             if (err) {
+                console.log('expired refresh token');
                 foundUser.refreshToken = [...newRefreshTokenArray]
                 const result = await foundUser.save()
+                console.log(result);
             }
 
             if (err || foundUser.username !== decoded.username) return res.sendStatus(403);
